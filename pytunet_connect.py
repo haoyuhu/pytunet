@@ -29,7 +29,7 @@ ret_type  = {'logout_ok'       : 'LOGOUT SUCCESS',
 			'ip_alloc'         : 'THE IP HAS BEEN ASSIGNED TO OTHER USER'
 			}
 
-version  = '1.2'
+version  = '1.1'
 sleep_time = 8
 
 #########################################################
@@ -88,6 +88,7 @@ def tunet_help():
 	print ('-o, --logout : logout operation')
 	print ('-c, --check  : check the internet')
 	print ('-q, --query  : query basic infomation, online state and flux usage details')
+	print ('-d, --delete : delete an exitent IP')
 
 def tunet_version():
 	print ('Tsinghua University Internet Connector ', version)

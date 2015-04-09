@@ -6,10 +6,14 @@ query_login_url  = 'https://usereg.tsinghua.edu.cn/do.php'
 user_info_url    = 'https://usereg.tsinghua.edu.cn/user_info.php'
 online_state_url = 'https://usereg.tsinghua.edu.cn/online_user_ipv4.php'
 query_logout_url = 'https://usereg.tsinghua.edu.cn/do.php'
+delete_url       = 'https://usereg.tsinghua.edu.cn/online_user_ipv4.php'
 
 info_header = [ '#' * 89,
 				'#\t\t\t\tUser Flux Detail Infomation\t\t\t\t#',
 				'#' * 89]
+
+# the FLUX_UNIT by usereg.tsinghua.edu.cn, i'm puzzled why not 1024
+FLUX_UNIT = 1000
 
 #########################################################
 #					File I/O Modules					#
@@ -44,7 +48,7 @@ def create_opener():
 def response_login(login_data):
 	request_url = urllib.request.Request(query_login_url, login_data.encode())
 	response_url = urllib.request.urlopen(request_url)
-	return response_url.read().decode()
+	return response_url.read().decode('gb2312')
 
 #########################################################
 #				Main Login/Logout Modules				#
@@ -66,7 +70,6 @@ def query_logout():
 	logout_data = 'action=logout'
 	request_url = urllib.request.Request(query_logout_url, logout_data.encode())
 	response_url = urllib.request.urlopen(request_url)
-	print ('Your flux details and other infomations are saved in USER_DETAIL_INFOMATION.LOG under the SAME directory')
 
 #########################################################
 #				Data Post-Process Modules				#
@@ -82,9 +85,10 @@ def post_process(info):
 	response_details = urllib.request.urlopen(flux_detail_url)
 
 	info = flux_account_query(info, response_usr)
-	info = online_state_query(info, response_state)
+	info = online_state_query(info, response_state.read().decode('gb2312'), True)
 	info = flux_detail_query(info, response_details)
 	
+	print ('Your flux details and other infomations are saved in USER_DETAIL_INFOMATION.LOG under the SAME directory')
 	return info
 
 #########################################################
@@ -100,7 +104,7 @@ flux_detail_keys  = ()
 def turn_key(key):
 	if key[-5:-1] == 'byte':
 		flux, unit = key.split('(')
-		flux = float(flux) / 1024 / 1024
+		flux = float(flux) / FLUX_UNIT / FLUX_UNIT
 		new_key = '-->' + str(int(flux)) + '(MB)'
 		key += new_key
 	return key
@@ -119,16 +123,15 @@ def solve_flux(flux):
 	val = float(flux[:len(flux)-1:])
 
 	if unit == 'B':
-		val /= 1024 * 1024
+		val /= FLUX_UNIT * FLUX_UNIT
 	elif unit == 'K':
-		val /= 1024
+		val /= FLUX_UNIT
 	elif unit == 'G':
-		val *= 1024
+		val *= FLUX_UNIT
 
 	return int(val)
 
-def trans_content(response):
-	raw = response.read().decode('gb2312')
+def trans_content(raw):
 	raw = re.sub('<[^>]+>|&nbsp;|[\n\t]+|-->',' ',raw)
 	raw = re.sub(' +', ' ', raw)
 	return raw
@@ -199,7 +202,7 @@ def display_flux_detail(fluxin, year, month, day):
 #Integrated Query
 def flux_account_query(info, response):
 	info.append('**用户基本信息**')
-	done = trans_content(response)
+	done = trans_content(response.read().decode('gb2312'))
 	match = re.search('用户名.*?(元) ', done)
 	done = match.group()
 	tlist = done.split(' ')
@@ -217,10 +220,10 @@ def flux_account_query(info, response):
 	info.append('-' * 89)
 	return info
 
-def online_state_query(info, response):
+def online_state_query(info, raw, do_display):
 	info.append('**用户在线状态**')
 	
-	done = trans_content(response)
+	done = trans_content(raw)
 	match = re.search('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*\d{2}:\d{2}', done)
 
 	if match == None:
@@ -249,13 +252,14 @@ def online_state_query(info, response):
 					count = 0
 
 	info.append('-' * 89)
-	display_fluxAccount_onlineState(info);
+	if do_display:
+		display_fluxAccount_onlineState(info)
 	return info
 
 def flux_detail_query(info, response):
 	info.append('**每日流量使用统计列表**')
 	info.append('登出日期\t入流量\t出流量')
-	done = trans_content(response)
+	done = trans_content(response.read().decode('gb2312'))
 	year, month = time.strftime('%Y %m').split(' ')
 	days = get_days(int(year), int(month))
 	tlist = done.split(' ')
@@ -290,6 +294,60 @@ def flux_detail_query(info, response):
 
 	display_flux_detail(fluxin_perday, int(year), int(month), days)
 	return info
+
+#########################################################
+#					IP Offline Modules					#
+#########################################################
+def tunet_delete(username, password):
+	print('FETCHING DATA FROM http://usereg.tsinghua.edu.cn, PLEASE WAIT FOR A MOMENT...')
+	is_login = query_login(username, password)
+	if is_login:
+		info = []
+		response_state = urllib.request.urlopen(online_state_url)
+		raw = response_state.read().decode('gb2312')
+		info = online_state_query(info, raw, False)
+		tlist = re.findall('\w{32}', raw)
+
+		print()
+		if len(info) == 3:
+			for i in range(2):
+				print (info[i])
+			print ('\nNOW SYSTEM LOGOUT')
+			query_logout()
+			exit(1)
+		else:
+			for i in range(len(info) - 1):
+				if i == 0:
+					print (info[i])
+				elif i == 1:
+					print ('序号\t' + info[i])
+				else:
+					print (str(i-1) + '\t' + info[i])
+			print()
+
+		while True:
+			index = int(input('Which IP do you want to delete, please inpute the INDEX(0 to QUIT): '))
+			if index in range(1, len(tlist) + 1):
+				break
+			elif index == 0:
+				print ('NOW SYSTEM LOGOUT')
+				query_logout()
+				exit(0)
+			print ('YOUR INPUT IS INVALID, PLEASE INPUT AGAIN\n')
+
+		ip = re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', info[index+1])
+		post = 'action=drop&user_ip=' + ip[0] + '&checksum=' + tlist[index-1]
+		
+		request = urllib.request.Request(delete_url, post.encode())
+		response = urllib.request.urlopen(request)
+
+		if response.read().decode('gb2312') == 'ok':
+			print('IP %s IS OFFLINE' %ip[0])
+		else:
+			print('IP ERROR, CAN\'T DELETE THE ADDRESS')
+		query_logout()
+	else:
+		print ('CAN\'T CAPTURE YOUR FLUX DATA, PLEASE TRY AGAIN LATER')
 
 #########################################################
 #						Main Part						#

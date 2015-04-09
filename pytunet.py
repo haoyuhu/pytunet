@@ -1,8 +1,8 @@
 #########################################################
 #						Welcome							#
 #	Tsinghua University Internet Connector in Python	#
-#					 Version: v1.2 						#
-#					Date: 2015/04/05					#
+#					 Version: v1.1 						#
+#					Date: 2015/04/09					#
 #			By: Haoyu hu	Email: im@huhaoyu.com		#
 #			Address: Tsinghua University				#
 #########################################################
@@ -27,13 +27,14 @@ def pytunet():
 	file_handler.close()
 
 	try:
-		options, args = getopt.getopt(sys.argv[1:], 'achiop:qu:v', ['help', 'login', 'logout', 'check', 'version', 'query'])
+		options, args = getopt.getopt(sys.argv[1:], 'acdhiop:qu:v', ['help', 'login', 'logout', 'check', 'version', 'query', 'delete'])
 	except getopt.GetoptError:
 		pytunet_connect.tunet_others()
 		sys.exit(1)
 
 	want_login = False
 	want_query = False
+	want_delete = False
 	flag = False
 
 	name, value = None, None
@@ -61,16 +62,20 @@ def pytunet():
 			sys.exit(0)
 		elif name in ('-q', '--query'):
 			want_query = True
+		elif name in ('-d', '--delete'):
+			want_delete = True
 
 	if flag:
 		username = input('username: ')
 		password = getpass.getpass('password: ')
-		print (password)
 
 	if want_query:
 		pytunet_query.tunet_query(username, password)
 
-	if want_login or not want_query and not want_login:
+	if want_delete:
+		pytunet_query.tunet_delete(username, password)
+
+	if want_login or not want_query and not want_login and not want_delete:
 		pytunet_connect.tunet_connect(username, password)
 
 	# if not want_query and not want_login:
