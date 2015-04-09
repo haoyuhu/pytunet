@@ -47,7 +47,14 @@ def create_opener():
 
 def response_login(login_data):
 	request_url = urllib.request.Request(query_login_url, login_data.encode())
-	response_url = urllib.request.urlopen(request_url)
+	try:
+		response_url = urllib.request.urlopen(request_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 	return response_url.read().decode('gb2312')
 
 #########################################################
@@ -69,7 +76,14 @@ def query_login(username, password):
 def query_logout():
 	logout_data = 'action=logout'
 	request_url = urllib.request.Request(query_logout_url, logout_data.encode())
-	response_url = urllib.request.urlopen(request_url)
+	try:
+		response_url = urllib.request.urlopen(request_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 
 #########################################################
 #				Data Post-Process Modules				#
@@ -79,10 +93,16 @@ def post_process(info):
 	end_time = time.strftime('%Y-%m-%d')
 	start_time = end_time[:8:] + '01'
 	flux_detail_url = 'https://usereg.tsinghua.edu.cn/user_detail_list.php?action=balance2&user_login_name=&user_real_name=&desc=&order=&start_time=' + start_time + '&end_time=' + end_time + '&user_ip=&user_mac=&nas_ip=&nas_port=&is_ipv6=0&page=1&offset=200'	
-
-	response_usr = urllib.request.urlopen(user_info_url)
-	response_state = urllib.request.urlopen(online_state_url)
-	response_details = urllib.request.urlopen(flux_detail_url)
+	try:
+		response_usr = urllib.request.urlopen(user_info_url)
+		response_state = urllib.request.urlopen(online_state_url)
+		response_details = urllib.request.urlopen(flux_detail_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 
 	info = flux_account_query(info, response_usr)
 	info = online_state_query(info, response_state.read().decode('gb2312'), True)
@@ -303,7 +323,14 @@ def tunet_delete(username, password):
 	is_login = query_login(username, password)
 	if is_login:
 		info = []
-		response_state = urllib.request.urlopen(online_state_url)
+		try:
+			response_state = urllib.request.urlopen(online_state_url)
+		except urllib.error.HTTPError as e:
+			print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+			sys.exit(1)
+		except urllib.error.URLError as e:
+			print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+			sys.exit(1)
 		raw = response_state.read().decode('gb2312')
 		info = online_state_query(info, raw, False)
 		tlist = re.findall('\w{32}', raw)
@@ -339,8 +366,15 @@ def tunet_delete(username, password):
 		post = 'action=drop&user_ip=' + ip[0] + '&checksum=' + tlist[index-1]
 		
 		request = urllib.request.Request(delete_url, post.encode())
-		response = urllib.request.urlopen(request)
-
+		try:
+			response = urllib.request.urlopen(request)
+		except urllib.error.HTTPError as e:
+			print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+			sys.exit(1)
+		except urllib.error.URLError as e:
+			print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+			sys.exit(1)
+		
 		if response.read().decode('gb2312') == 'ok':
 			print('IP %s IS OFFLINE' %ip[0])
 		else:

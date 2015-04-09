@@ -1,5 +1,5 @@
-import time
-import urllib.request, hashlib
+import time, sys
+import urllib.request, urllib.error, hashlib
 import codecs
 
 login_url  = 'http://net.tsinghua.edu.cn/cgi-bin/do_login'
@@ -51,13 +51,27 @@ def tunet_login(username, password):
 	login_data = 'username=' + username + '&password=' + tr_password + '&drop=0&type=1&n=100'
 	login_data = login_data.encode()
 	request_url = urllib.request.Request(login_url, login_data)
-	response_url = urllib.request.urlopen(request_url)
+	try:
+		response_url = urllib.request.urlopen(request_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 	ret = trans_content(response_url)
 	print (ret_type.get(ret, 'CONNECTED'))
 	return ret
 
 def tunet_logout():
-	response_url = urllib.request.urlopen(logout_url)
+	try:
+		response_url = urllib.request.urlopen(logout_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 	ret = trans_content(response_url)
 	print (ret_type.get(ret, 'CONNECTED'))
 	return ret
@@ -66,7 +80,14 @@ def tunet_check():
 	check_data = 'action=check_online'
 	check_data = check_data.encode()
 	request_url = urllib.request.Request(check_url, check_data)
-	response_url = urllib.request.urlopen(request_url)
+	try:
+		response_url = urllib.request.urlopen(request_url)
+	except urllib.error.HTTPError as e:
+		print ('THE SERVER COULD NOT FULFILL THE REQUEST, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
+	except urllib.error.URLError as e:
+		print ('WE FAILED TO REACH A SERVER, PLEASE CHECK YOUR NETWORK')
+		sys.exit(1)
 	ret = trans_content(response_url)
 	if ret == '':
 		print ('NOT ONLINE')

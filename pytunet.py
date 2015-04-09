@@ -19,7 +19,7 @@ def pytunet():
 		print('%s IS DAMAGED, PLEASE CHECK THE CONTENT FORMAT IN THE FILE:' %relative_path)
 		print('CONTENT FORMAT AS FOLLOWS:')
 		print('username=huhy14\npassword=123456')
-		exit(1)
+		sys.exit(1)
 	username = re.sub('\s', '', lines[0])
 	password = re.sub('\s', '', lines[1])
 	_, username = username.split('=')
