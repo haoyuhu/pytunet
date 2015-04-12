@@ -282,28 +282,19 @@ def flux_detail_query(info, response):
 	done = trans_content(response.read().decode('gb2312'))
 	year, month = time.strftime('%Y %m').split(' ')
 	days = get_days(int(year), int(month))
-	tlist = done.split(' ')
+	tlist = re.findall('\d{4}-\d{2}-\d{2}|\d+[.]*\d*[BKMG]', done)
 
 	fluxin_perday = [0 for i in range(days)]
 	fluxout_perday = [0 for i in range(days)]
-	offline_date = True
-	count = 0
 
-	for key in tlist:
-		if re.search('\d{4}-\d{2}-\d{2}', key) and offline_date:
-			offline_date = False
-		elif re.search('\d{4}-\d{2}-\d{2}', key) and not offline_date:
-			offline_date = True
-			year, month, day = key.split('-')
+	for i in range(len(tlist)):
+		if i % 7 == 1:
+			year, month, day = tlist[i].split('-')
 			iday = int(day)
-		elif re.search('\d+[.]\d*[BKMG]', key) and count == 0:
-			fluxin_perday[iday-1] += solve_flux(key)
-			count += 1
-		elif re.search('\d+[.]\d*[BKMG]', key) and count == 1:
-			fluxout_perday[iday-1] += solve_flux(key)
-			count += 1
-		elif re.search('\d+[.]\d*[BKMG]', key) and count == 2:
-			count = 0
+		elif i % 7 == 2:
+			fluxin_perday[iday-1] += solve_flux(tlist[i])
+		elif i % 7 == 3:
+			fluxout_perday[iday-1] += solve_flux(tlist[i])
 	
 	for i in range(days):
 		if i + 1 < 10:
